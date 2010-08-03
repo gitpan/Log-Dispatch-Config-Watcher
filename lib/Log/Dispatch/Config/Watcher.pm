@@ -1,7 +1,7 @@
 package Log::Dispatch::Config::Watcher;
 use strict;
 use warnings;
-our $VERSION = '0.01_1';
+our $VERSION = '0.01_2';
 
 use utf8;
 use DateTime;
@@ -12,10 +12,6 @@ use DateTime::Format::Duration;
 use Hook::LexWrap ();
 use Log::Dispatch::Config;
 use base qw(Log::Dispatch::Config);
-
-# Log::WarnDie の問題
-# binmode STDERR, ':utf8' がエラーになる
-# 明示的に warn したものしかログに統合されない？
 
 # backup existing die/warn handlers
 my $WARN;

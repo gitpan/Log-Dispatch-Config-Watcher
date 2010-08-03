@@ -6,7 +6,13 @@ readme_markdown_from 'lib/Log/Dispatch/Config/Watcher.pm';
 readme_pod_from 'lib/Log/Dispatch/Config/Watcher.pm';
 githubmeta;
 
-# requires '';
+requires 'Log::Dispatch::Config';
+requires 'Hook::LexWrap';
+requires 'DateTime';
+requires 'DateTime::HiRes';
+requires 'DateTime::Format::Strptime';
+requires 'DateTime::Duration';
+requires 'DateTime::Format::Duration';
 
 tests 't/*.t';
 author_tests 'xt';

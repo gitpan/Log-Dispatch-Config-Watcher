@@ -18,8 +18,16 @@ no_index:
     - inc
     - t
     - xt
+requires:
+  DateTime: 0
+  DateTime::Duration: 0
+  DateTime::Format::Duration: 0
+  DateTime::Format::Strptime: 0
+  DateTime::HiRes: 0
+  Hook::LexWrap: 0
+  Log::Dispatch::Config: 0
 resources:
   homepage: http://github.com/keroyonn/p5-Log-Dispatch-Config-Watcher/tree
   license: http://dev.perl.org/licenses/
   repository: git://github.com/keroyonn/p5-Log-Dispatch-Config-Watcher.git
-version: 0.01_1
+version: 0.01_2
