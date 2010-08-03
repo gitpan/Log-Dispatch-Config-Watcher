@@ -1,0 +1,179 @@
+NAME
+    Log::Dispatch::Config::Watcher - Subclass of Log::Dispatch::Config that
+    observes the start and the end of functions
+
+SYNOPSIS
+      #---------- code ----------
+      use Log::Dispatch::Config::Watcher;
+      use Log::Dispatch::Configurator::YAML;
+
+      my $config = Log::Dispatch::Configurator::YAML->new('/path/to/log.yaml');
+      Log::Dispatch::Config::Watcher->configure($config);
+      my $log = Log::Dispatch::Config::Watcher->instance;
+
+      $log->info('... log message ...');
+      test1();
+      test2();
+      test3();
+
+      sub test1 {
+        $log->warn('sample warning.');
+        sleep 4;
+      }
+
+      sub test2 {
+        sleep 5;
+        eval { die 'die with expected exception'; };
+        warn $@ if $@;
+      }
+
+      sub test3 {
+        die 'die with unexpected exception.';
+      }
+
+      #---------- yaml file ----------
+      dispatchers:
+        - screen
+      screen:
+        class: Log::Dispatch::Screen
+        min_level: debug
+        format: '[%p] %F:%L %m [%D{%F %T.%6N%z}]'
+        newline: 1
+        stderr: 1
+      watch:
+        watch_die: 1
+        watch_only_unexpected_die: 1
+        watch_warn: 1
+        formats:
+          start: '[%p] START:%j [%D{%F %T.%6N%z}]'
+          end: '[%p] END:%j(%t) [%D{%F %T.%6N%z}]'
+          end_with_die: '[%p] ABNORMALLY_ENDED:%j(%e) [%D{%F %T.%6N%z}]'
+          die: '[%p] UNEXPECTED_DIE (%e) [%D{%F %T.%6N%z}]'
+          warn: '[%p] PERL_WARNING (%e) [%D{%F %T.%6N%z}]'
+          timeover: '[%p] TIMEOVER:%j(%t)'
+        functions:
+          main::test1:
+            description: sleep 4 seconds process
+            warn_duration: 5.0
+            notice_duration: 3.5
+          main::test3:
+            description: sleep 5 seconds process
+            warn_duration: 4.0
+            notice_duration: 2.5
+
+      #---------- results ----------
+      [info] ./log.pl:13 ... log message ... [2010-07-30 15:34:16.316215+0900]
+
+      [info] START:"sleep 4 seconds process" [2010-07-30 15:34:16.319123+0900]
+      [warn] ./log.pl:19 sample warning. [2010-07-30 15:34:16.320854+0900]
+      [notice] TIMEOVER:"sleep 4 seconds process"(=>00:00:04.005179167)
+      [info] END:"sleep 4 seconds process"(=>00:00:04.005179167) [2010-07-30 15:34:20.324692+0900]
+
+      [warning] PERL_WARNING (die with expected exception at ./log.pl line 25.)
+
+      [info] START:"sleep 5 seconds process" [2010-07-30 15:34:25.328754+0900]
+      [critical] ABNORMALLY_ENDED:"sleep 5 seconds process"(die with unexpected exception. at ./log.pl line 30.) [2010-07-30 15:34:25.330754+0900]
+
+DESCRIPTION
+    This is a subclass of Log::Dispatch::Config that can observe the start
+    and the end of functions.
+
+DESCRIPTION(japanese)
+    Log::Dispatch::Config::WatcherはLog::Dispatch::Configを継承し、関数の実行などを自動でログ出力
+    できるように拡張したクラスです。
+
+  監視対象
+    1. 関数の起動と終了
+        指定された関数名の起動と終了を監視し、定められたフォーマットでログを出力します。また、経過時間を元にログレベルを切り替えることができます
+        。
+
+    2. warn と die
+        perl の warn と die を指定されたレベルのログに変換して出力します。SEE ALSO Log::WarnDie
+
+  フォーマット記述子の拡張
+    %j  監視対象の関数の説明文(watch.formats.functions.[メソッド名].description)
+
+    %e  warn|die のエラー内容($@)
+
+    %t  監視対象の関数の実行時間
+
+    %D{...}
+        時刻の出力フォーマット DateTime::Format::Strptime
+        に渡すことのできるフォーマットを...に記述します。ナノセカンド単位で表示することが可能です。
+
+  フォーマットの動的切替
+    同一のディスパッチクラス(Log::Dispatch::Outputのサブクラス)内で、次のフォーマットを個別に指定することができます。
+
+    watch.formats.start
+        監視対象の関数の起動時に出力されるログのフォーマット
+
+    watch.formats.end
+        監視対象の関数の終了時に出力されるログのフォーマット
+
+    watch.formats.end_with_die
+        監視対象の関数の異常終了時に出力されるログのフォーマット
+
+    watch.formats.timeover
+        監視対象の関数の実行時間が指定時間(warn_duration|notice_duration)を超えた場合に出力されるログのフォーマッ
+        ト
+
+    watch.formats.die
+        die 時に出力されるログのフォーマット
+
+    watch.formats.warn
+        warn 時に出力されるログのフォーマット
+
+CONFIGURATION
+    Here is an example of the config file:
+
+      dispatchers:
+        - screen
+      screen:
+        class: Log::Dispatch::Screen
+        min_level: debug
+        format: '[%p] %F:%L %m [%D{%F %T.%6N%z}]'
+        newline: 1
+        stderr: 1
+      watch:
+        watch_die: 1
+        watch_only_unexpected_die: 1
+        watch_warn: 1
+        formats:
+          start: '[%p] START:%j [%D{%F %T.%6N%z}]'
+          end: '[%p] END:%j(%t) [%D{%F %T.%6N%z}]'
+          end_with_die: '[%p] ABNORMALLY_ENDED:%j(%e) [%D{%F %T.%6N%z}]'
+          die: '[%p] UNEXPECTED_DIE (%e) [%D{%F %T.%6N%z}]'
+          warn: '[%p] PERL_WARNING (%e)'
+          timeover: '[%p] TIMEOVER:%j(%t)'
+        functions:
+          main::test1:
+            description: sleep some seconds process
+            warn_duration: 5.0
+            notice_duration: 3.5
+          main::test2:
+            description: sleep some seconds process
+            warn_duration: 4.0
+            notice_duration: 2.5
+      time_zone: Asia/Tokyo
+
+DEPENDENCIES
+    Log::Dispatch::Config
+    Hook::LexWrap
+    DateTime
+    DateTime::HiRes
+    DateTime::Format::Strptime
+    DateTime::Duration
+    DateTime::Format::Duration
+
+AUTHOR
+    keroyon <keroyon@cpan.org>
+
+SEE ALSO
+    Log::Dispatch::Config
+    Log::Dispatch
+    Log::WarnDie
+
+LICENSE
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
