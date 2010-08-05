@@ -1,4 +1,3 @@
-.gitignore
 Changes
 inc/Module/Install.pm
 inc/Module/Install/AuthorTests.pm
@@ -25,6 +24,12 @@ README
 README.mkdn
 README.pod
 t/00_compile.t
+t/01_normal_format.t
+t/02_extension_format.t
+t/03_warndie.t
+t/log_extension_fmt.yaml
+t/log_normal_fmt.cfg
+t/log_warndie.yaml
 xt/01_podspell.t
 xt/02_perlcritic.t
 xt/03_pod.t

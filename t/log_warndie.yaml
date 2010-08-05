@@ -1,0 +1,39 @@
+dispatchers:
+  - screen_debug
+  - screen_info
+  - screen_error
+  - screen_alert
+
+screen_debug:
+  class: Log::Dispatch::Screen
+  min_level: warning 
+  max_level: warning
+  stderr: 1
+  format: '%m'
+
+screen_info:
+  class: Log::Dispatch::Screen
+  min_level: info
+  max_level: info
+  stderr: 1
+
+screen_error:
+  class: Log::Dispatch::Screen
+  min_level: error
+  max_level: error
+  stderr: 1
+
+screen_alert:
+  class: Log::Dispatch::Screen
+  min_level: alert
+  max_level: alert
+  stderr: 1
+
+watch:
+  watch_warn: 1
+  watch_die: 1
+  warn_level: error
+  die_level: alert
+  formats:
+    warn: '[%p] %e'
+    die: '[%p] %e'

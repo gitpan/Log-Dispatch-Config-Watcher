@@ -7,6 +7,7 @@ readme_pod_from 'lib/Log/Dispatch/Config/Watcher.pm';
 githubmeta;
 
 requires 'Log::Dispatch::Config';
+requires 'Log::Dispatch::Configurator::YAML';
 requires 'Hook::LexWrap';
 requires 'DateTime';
 requires 'DateTime::HiRes';

@@ -1,0 +1,26 @@
+dispatchers:
+  - screen_debug
+  - screen_info
+
+screen_debug:
+  class: Log::Dispatch::Screen
+  min_level: debug
+  max_level: debug
+  stderr: 1
+  format: '%D{%Y-%m-%d}'
+
+screen_info:
+  class: Log::Dispatch::Screen
+  min_level: info
+  max_level: info
+  stderr: 1
+
+watch:
+  formats:
+    start: '[%p] START:%j'
+    end: '[%p] END:%j(%t)'
+  functions:
+    main::test1:
+      description: TEST TASK
+      end_with_die: '[%p] ABNORMALLY_ENDED'
+

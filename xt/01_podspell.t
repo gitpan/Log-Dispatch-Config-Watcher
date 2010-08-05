@@ -9,4 +9,6 @@ keroyonn
 keroyon
 keroyon@cpan.org
 timeover
+TODO
+YAML
 Log::Dispatch::Config::Watcher

@@ -1,5 +1,8 @@
 Revision history for Perl extension Log::Dispatch::Config::Watcher
 
+0.02    Thu Aug  5 22:55:00 2010
+        - add tests
+
 0.01_2  Tue Aug  3 06:48:43 2010
         - add dependencies
 

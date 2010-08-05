@@ -26,8 +26,10 @@ requires:
   DateTime::HiRes: 0
   Hook::LexWrap: 0
   Log::Dispatch::Config: 0
+  Log::Dispatch::Configurator::YAML: 0
+  perl: 5.8.8
 resources:
   homepage: http://github.com/keroyonn/p5-Log-Dispatch-Config-Watcher/tree
   license: http://dev.perl.org/licenses/
   repository: git://github.com/keroyonn/p5-Log-Dispatch-Config-Watcher.git
-version: 0.01_2
+version: 0.02

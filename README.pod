@@ -14,39 +14,41 @@ Log::Dispatch::Config::Watcher - Subclass of Log::Dispatch::Config that observes
   Log::Dispatch::Config::Watcher->configure($config);
   my $log = Log::Dispatch::Config::Watcher->instance;
 
-  $log->info('... log message ...');
+  $log->info('log message');
   test1();
   test2();
   test3();
 
-  sub test1 {
+  sub test1 { # observed + warn
     $log->warn('sample warning.');
     sleep 4;
   }
 
-  sub test2 {
-    sleep 5;
+  sub test2 { # not observed + exepected die(eval) + warn
     eval { die 'die with expected exception'; };
     warn $@ if $@;
   }
 
-  sub test3 {
+  sub test3 { # observed + unexpected die(not eval)
+    sleep 5;
     die 'die with unexpected exception.';
   }
 
-  #---------- yaml file ----------
+  #---------- YAML file ---------- YAML format strongly recommended
   dispatchers:
     - screen
   screen:
     class: Log::Dispatch::Screen
     min_level: debug
-    format: '[%p] %F:%L %m [%D{%F %T.%6N%z}]'
+    format: '[%p] %F:%L %m [%D{%F %T.%6N%z}]' # see DateTime::Format::Strptime
     newline: 1
     stderr: 1
   watch:
-    watch_die: 1
+    watch_die: 1 # watching perl's die method.
     watch_only_unexpected_die: 1
-    watch_warn: 1
+    watch_warn: 1 # watching perl's warn method.
+	die_level: critical
+	warn_level: warning
     formats:
       start: '[%p] START:%j [%D{%F %T.%6N%z}]'
       end: '[%p] END:%j(%t) [%D{%F %T.%6N%z}]'
@@ -55,9 +57,9 @@ Log::Dispatch::Config::Watcher - Subclass of Log::Dispatch::Config that observes
       warn: '[%p] PERL_WARNING (%e) [%D{%F %T.%6N%z}]'
       timeover: '[%p] TIMEOVER:%j(%t)'
     functions:
-      main::test1:
+      main::test1: # function name. Don't forget adding the package name.
         description: sleep 4 seconds process
-        warn_duration: 5.0
+        warn_duration: 5.0 # write seconds.
         notice_duration: 3.5
       main::test3:
         description: sleep 5 seconds process
@@ -65,7 +67,7 @@ Log::Dispatch::Config::Watcher - Subclass of Log::Dispatch::Config that observes
         notice_duration: 2.5
 
   #---------- results ----------
-  [info] ./log.pl:13 ... log message ... [2010-07-30 15:34:16.316215+0900]
+  [info] ./log.pl:13 log message [2010-07-30 15:34:16.316215+0900]
 
   [info] START:"sleep 4 seconds process" [2010-07-30 15:34:16.319123+0900]
   [warn] ./log.pl:19 sample warning. [2010-07-30 15:34:16.320854+0900]
@@ -75,83 +77,91 @@ Log::Dispatch::Config::Watcher - Subclass of Log::Dispatch::Config that observes
   [warning] PERL_WARNING (die with expected exception at ./log.pl line 25.)
 
   [info] START:"sleep 5 seconds process" [2010-07-30 15:34:25.328754+0900]
+  [warning] TIMEOVER:"sleep 5 seconds process"(=>00:00:05.00351812)
   [critical] ABNORMALLY_ENDED:"sleep 5 seconds process"(die with unexpected exception. at ./log.pl line 30.) [2010-07-30 15:34:25.330754+0900]
 
+=head1 POD BUGS
+
+This POD does'nt make sense because my English Sux.
+
+The best way to understand the usage of this module is reading the "SYNOPSIS" section.
+
+Reading the "DESCRIPTION" section makes you confusing, I guess.
 
 =head1 DESCRIPTION
 
-This is a subclass of L<Log::Dispatch::Config> that can observe the start and the end of functions.
+This is a subclass of L<Log::Dispatch::Config> that watches the start and the end of functions, warn and die.
 
-=head1 DESCRIPTION(japanese)
-
-L<Log::Dispatch::Config::Watcher>はL<Log::Dispatch::Config>を継承し、関数の実行などを自動でログ出力できるように拡張したクラスです。
-
-=head2 監視対象
+=head2 Watch object
 
 =over
 
-=item 1. 関数の起動と終了
+=item 1. The start and end of the function
 
-指定された関数名の起動と終了を監視し、定められたフォーマットでログを出力します。また、経過時間を元にログレベルを切り替えることができます。
+This class watches the start and the end of the function whose name is defined in a config file, and outputs the log whose format is defined in a config file.
 
-=item 2. warn と die
+Moreover, the log level can be switched based on the elapsed time. 
 
-perl の warn と die を指定されたレベルのログに変換して出力します。SEE ALSO L<Log::WarnDie>
+=item 2. Warn and die
+
+This class watches the perl's warn and die.
+
+When the warn or die is invoked, it is converted into the Log::Dispatch::log method.
+
+SEE ALSO L<Log::WarnDie>
 
 =back
 
-=head2 フォーマット記述子の拡張
+=head2 Enhancing of format character
 
 =over
 
 =item %j
 
-監視対象の関数の説明文(watch.formats.functions.[メソッド名].description)
+Explanation of the function
+(watch.formats.functions.[function name].description)
 
 =item %e
 
-warn|die のエラー内容($@)
+Error message of warn and die ($@)
 
 =item %t
 
-監視対象の関数の実行時間
+Execution time of function to be observed
 
 =item %D{...}
 
-時刻の出力フォーマット
-DateTime::Format::Strptime に渡すことのできるフォーマットを...に記述します。ナノセカンド単位で表示することが可能です。
+Output format of time which is passed to DateTime::Format::Strptime.
 
 =back
 
-=head2 フォーマットの動的切替
-
-同一のディスパッチクラス(Log::Dispatch::Outputのサブクラス)内で、次のフォーマットを個別に指定することができます。
+=head2 format list
 
 =over
 
 =item watch.formats.start
 
-監視対象の関数の起動時に出力されるログのフォーマット
+Log format that is used when the function is started.
 
 =item watch.formats.end
 
-監視対象の関数の終了時に出力されるログのフォーマット
+Log format that is used when the function is ended.
 
 =item watch.formats.end_with_die
 
-監視対象の関数の異常終了時に出力されるログのフォーマット
+Log format that is used when the function is died.
 
 =item watch.formats.timeover
 
-監視対象の関数の実行時間が指定時間(warn_duration|notice_duration)を超えた場合に出力されるログのフォーマット
+Log format that is used when the execution time of the function ran over "warn_duration" or "notice_duration" time.
 
 =item watch.formats.die
 
-die 時に出力されるログのフォーマット
+Log format that is used when the program is died.
 
 =item watch.formats.warn
 
-warn 時に出力されるログのフォーマット
+Log format that is used when the program calls a warn method.
 
 =back
 
@@ -171,6 +181,8 @@ Here is an example of the config file:
     watch_die: 1
     watch_only_unexpected_die: 1
     watch_warn: 1
+	die_level: critical
+	warn_level: warning
     formats:
       start: '[%p] START:%j [%D{%F %T.%6N%z}]'
       end: '[%p] END:%j(%t) [%D{%F %T.%6N%z}]'
@@ -189,6 +201,42 @@ Here is an example of the config file:
         notice_duration: 2.5
   time_zone: Asia/Tokyo
 
+YAML format is strongly recommended.
+
+=over
+
+=item watch.watch_die
+
+Disabling or enabling the watching of the perl's die.
+default is 0.
+
+=item watch.watch_only_unexpected_die
+
+Disabling or enabling the watching of the perl's die.
+default is 0.
+
+=item watch.watch_warn
+
+Disabling or enabling the watching of the perl's warn.
+default is 0.
+
+=item watch.die_level
+
+default is critical.
+
+=item watch.warn_level
+
+default is warning.
+
+=item watch.formats
+
+
+see DESCRIPTION section.
+
+=item watch.functions
+
+=back
+
 =head1 DEPENDENCIES
 
 =over
@@ -206,6 +254,16 @@ Here is an example of the config file:
 =item L<DateTime::Duration>
 
 =item L<DateTime::Format::Duration>
+
+=back
+
+=head1 TODO
+
+=over
+
+=item add more tests
+
+=item fix this pod
 
 =back
 
